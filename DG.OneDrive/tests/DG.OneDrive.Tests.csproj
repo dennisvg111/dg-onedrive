@@ -28,7 +28,4 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DG.OneDrive\DG.OneDrive.csproj" />
-  </ItemGroup>
 </Project>
