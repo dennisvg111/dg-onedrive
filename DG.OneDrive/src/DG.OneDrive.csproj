@@ -49,9 +49,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Dennisvg.DG.Common" Version="1.10.5" />
-    <PackageReference Include="Dennisvg.DG.Common.Http" Version="0.2.1" />
+    <PackageReference Include="Dennisvg.DG.Common" Version="1.11.0" />
+    <PackageReference Include="Dennisvg.DG.Common.Http" Version="0.5.0" />
     <PackageReference Include="Dennisvg.DG.Cryptography" Version="1.0.6" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Data.DataSetExtensions" />
