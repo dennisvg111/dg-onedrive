@@ -20,12 +20,15 @@
   </PropertyGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <ItemGroup>
-    <PackageReference Include="Dennisvg.DG.Common" Version="1.10.5" />
+    <PackageReference Include="Dennisvg.DG.Common" Version="1.11.0" />
     <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.5.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\DG.OneDrive.csproj" />
   </ItemGroup>
 </Project>
