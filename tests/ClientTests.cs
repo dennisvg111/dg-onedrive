@@ -12,7 +12,7 @@ namespace DG.OneDrive.Tests
 
             client.SetAccessToken(EnvironmentClientInfoProvider.AccessToken);
 
-            var user = await client.GetUser();
+            var user = await client.GetCurrentUser();
 
             Assert.NotNull(user);
             Assert.Equal("https://graph.microsoft.com/v1.0/$metadata#users/$entity", user.odataContext);

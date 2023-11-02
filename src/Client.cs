@@ -20,7 +20,11 @@ namespace DG.OneDrive
             _clientInfoProvider = clientInfoProvider;
         }
 
-        public async Task<Office365User> GetUser()
+        /// <summary>
+        /// Returns the currently authenticated user.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Office365User> GetCurrentUser()
         {
             var request = FluentRequest.Get.To(_apiBaseUri + "/me")
                 .WithAuthorizationHeaderProvider(_accessTokenHeaderProvider);
