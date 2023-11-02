@@ -1,5 +1,4 @@
-﻿using DG.Common.Http.Authorization;
-using DG.Common.Http.Fluent;
+﻿using DG.Common.Http.Fluent;
 using DG.OneDrive.Serialized;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -24,7 +23,7 @@ namespace DG.OneDrive
         public async Task<Office365User> GetUser()
         {
             var request = FluentRequest.Get.To(_apiBaseUri + "/me")
-                .WithAuthorizationHeaderProvider(new ExpiringAuthorizationHeaderProvider(_accessTokenHeaderProvider));
+                .WithAuthorizationHeaderProvider(_accessTokenHeaderProvider);
 
             return await _client.SendAndDeserializeAsync<Office365User>(request);
         }
