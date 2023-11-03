@@ -71,6 +71,28 @@ namespace DG.OneDrive
             return await UploadStreamAsync(stream, session.UploadUri);
         }
 
+        public async Task CopyToStreamAsync(string fileId, Stream outputStream)
+        {
+            var request = FluentRequest.Get.To(_apiBaseUri + $"/me/drive/items/{fileId}/content")
+                .WithAuthorizationHeaderProvider(_accessTokenHeaderProvider);
+
+            var response = await _client.SendAsync(request);
+
+            await response.Content.CopyToAsync(outputStream);
+
+            if (outputStream.CanSeek)
+            {
+                outputStream.Position = 0;
+            }
+        }
+
+        public async Task<Stream> DownloadStreamAsync(string fileId)
+        {
+            MemoryStream stream = new MemoryStream();
+            await CopyToStreamAsync(fileId, stream);
+            return stream;
+        }
+
         private async Task<DriveItem> UploadStreamAsync(Stream stream, Uri uri)
         {
             if (stream.CanSeek)
