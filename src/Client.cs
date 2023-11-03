@@ -1,5 +1,6 @@
 ﻿using DG.Common.Http.Fluent;
 using DG.OneDrive.Serialized;
+using DG.OneDrive.Serialized.Resources;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -38,9 +39,14 @@ namespace DG.OneDrive
             return await _client.SendAndDeserializeAsync<Office365User>(request);
         }
 
-        private async Task<UploadSession> CreateUploadSession(UploadInformation information)
+        /// <summary>
+        /// Creates a new upload session.
+        /// </summary>
+        /// <param name="information"></param>
+        /// <returns></returns>
+        public async Task<UploadSession> CreateUploadSession(UploadMetaData information)
         {
-            var container = UploadInformationContainer.ForUpload(information);
+            var container = UploadRequest.WithMetaData(information);
 
             string uri = _apiBaseUri + $"/me/drive/special/approot:/{information.Path.TrimStart('/')}/{information.NameWithExtension}:/createUploadSession";
             var request = FluentRequest.Post.To(uri)
@@ -50,7 +56,7 @@ namespace DG.OneDrive
             return await _client.SendAndDeserializeAsync<UploadSession>(request);
         }
 
-        public async Task UploadFile(UploadInformation fileData, Stream stream)
+        public async Task UploadFile(UploadMetaData fileData, Stream stream)
         {
             if (stream.CanSeek)
             {
@@ -58,6 +64,11 @@ namespace DG.OneDrive
             }
 
             var session = await CreateUploadSession(fileData);
+
+            if (session.UploadUri == null)
+            {
+                throw new System.Exception();
+            }
 
             long totalLength = stream.Length;
             byte[] buffer = new byte[_maxUploadChunkSize];
@@ -70,18 +81,17 @@ namespace DG.OneDrive
                     break;
                 }
 
-                FluentRequest.Put.To(session.uploadUrl)
-                    .WithContent()
-
-                HttpRequestMessage uploadMessage = new HttpRequestMessage(HttpMethod.Put, session.uploadUrl)
+                HttpRequestMessage uploadMessage = new HttpRequestMessage(HttpMethod.Put, session.UploadUri)
                 {
                     Content = new ByteArrayContent(buffer, 0, byteCount)
                 };
                 uploadMessage.Content.Headers.Add("Content-Length", byteCount.ToString());
+
                 string contentRange = $"bytes {offset}-{(offset + byteCount - 1)}/{totalLength}";
+
                 uploadMessage.Content.Headers.Add("Content-Range", contentRange);
                 var result = _client.SendAsync(uploadMessage).Result;
-                var response = result.Content.ReadAsStringAsync();
+                var response = await result.Content.ReadAsStringAsync();
                 offset += byteCount;
             }
         }
