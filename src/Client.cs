@@ -1,6 +1,9 @@
 ﻿using DG.Common.Http.Fluent;
 using DG.OneDrive.Serialized;
+using DG.OneDrive.Serialized.DriveItems;
 using DG.OneDrive.Serialized.Resources;
+using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -31,7 +34,7 @@ namespace DG.OneDrive
         /// Returns the currently authenticated user.
         /// </summary>
         /// <returns></returns>
-        public async Task<Office365User> GetCurrentUser()
+        public async Task<Office365User> GetCurrentUserAsync()
         {
             var request = FluentRequest.Get.To(_apiBaseUri + "/me")
                 .WithAuthorizationHeaderProvider(_accessTokenHeaderProvider);
@@ -44,7 +47,7 @@ namespace DG.OneDrive
         /// </summary>
         /// <param name="information"></param>
         /// <returns></returns>
-        public async Task<UploadSession> CreateUploadSession(UploadMetaData information)
+        public async Task<UploadSession> CreateUploadSessionAsync(UploadMetaData information)
         {
             var container = UploadRequest.WithMetaData(information);
 
@@ -56,23 +59,30 @@ namespace DG.OneDrive
             return await _client.SendAndDeserializeAsync<UploadSession>(request);
         }
 
-        public async Task UploadFile(UploadMetaData fileData, Stream stream)
+        public async Task<DriveItem> UploadStreamAsync(UploadMetaData fileData, Stream stream)
         {
-            if (stream.CanSeek)
-            {
-                stream.Seek(0, SeekOrigin.Begin);
-            }
-
-            var session = await CreateUploadSession(fileData);
+            var session = await CreateUploadSessionAsync(fileData);
 
             if (session.UploadUri == null)
             {
                 throw new System.Exception();
             }
 
+            return await UploadStreamAsync(stream, session.UploadUri);
+        }
+
+        private async Task<DriveItem> UploadStreamAsync(Stream stream, Uri uri)
+        {
+            if (stream.CanSeek)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
             long totalLength = stream.Length;
             byte[] buffer = new byte[_maxUploadChunkSize];
             long offset = 0;
+
+            HttpResponseMessage lastResult = null;
             while (true)
             {
                 int byteCount = stream.Read(buffer, 0, buffer.Length);
@@ -81,7 +91,7 @@ namespace DG.OneDrive
                     break;
                 }
 
-                HttpRequestMessage uploadMessage = new HttpRequestMessage(HttpMethod.Put, session.UploadUri)
+                HttpRequestMessage uploadMessage = new HttpRequestMessage(HttpMethod.Put, uri)
                 {
                     Content = new ByteArrayContent(buffer, 0, byteCount)
                 };
@@ -90,10 +100,13 @@ namespace DG.OneDrive
                 string contentRange = $"bytes {offset}-{(offset + byteCount - 1)}/{totalLength}";
 
                 uploadMessage.Content.Headers.Add("Content-Range", contentRange);
-                var result = _client.SendAsync(uploadMessage).Result;
-                var response = await result.Content.ReadAsStringAsync();
+                lastResult = await _client.SendAsync(uploadMessage);
+
                 offset += byteCount;
             }
+
+            var json = await lastResult.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<DriveItem>(json);
         }
     }
 }

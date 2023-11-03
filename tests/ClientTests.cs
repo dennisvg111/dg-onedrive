@@ -1,5 +1,4 @@
-﻿using DG.OneDrive.Serialized;
-using DG.OneDrive.Serialized.Resources;
+﻿using DG.OneDrive.Serialized.Resources;
 using System;
 using System.IO;
 using System.Text;
@@ -22,7 +21,7 @@ namespace DG.OneDrive.Tests
         {
             var client = SetupClient();
 
-            var user = await client.GetCurrentUser();
+            var user = await client.GetCurrentUserAsync();
 
             Assert.NotNull(user);
             Assert.Equal("https://graph.microsoft.com/v1.0/$metadata#users/$entity", user.odataContext);
@@ -43,7 +42,7 @@ namespace DG.OneDrive.Tests
 
             using (var dummyFile = new MemoryStream(Encoding.UTF8.GetBytes(fileText)))
             {
-                await client.UploadFile(uploadInformation, dummyFile);
+                await client.UploadStreamAsync(uploadInformation, dummyFile);
             }
         }
     }
