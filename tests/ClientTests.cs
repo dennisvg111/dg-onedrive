@@ -1,4 +1,5 @@
-﻿using DG.OneDrive.Serialized.Resources;
+﻿using DG.OneDrive.Serialized.DriveItems;
+using DG.OneDrive.Serialized.Resources;
 using System;
 using System.IO;
 using System.Text;
@@ -40,10 +41,15 @@ namespace DG.OneDrive.Tests
             };
             string fileText = "Hello world! This is a test.";
 
+            DriveItem newFile;
+
             using (var dummyFile = new MemoryStream(Encoding.UTF8.GetBytes(fileText)))
             {
-                await client.UploadStreamAsync(uploadInformation, dummyFile);
+                newFile = await client.UploadStreamAsync(uploadInformation, dummyFile);
             }
+
+            Assert.NotNull(newFile);
+            Assert.NotNull(newFile.id);
         }
     }
 }
