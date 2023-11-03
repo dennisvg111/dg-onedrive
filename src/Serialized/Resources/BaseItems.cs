@@ -14,7 +14,7 @@ namespace DG.OneDrive.Serialized.Resources
         public DateTimeOffset lastModifiedDateTime { get; set; }
         public string name { get; set; }
         public ItemReference parentReference { get; set; }
-        public string webUrl { get; set; }
+        public Uri webUrl { get; set; }
 
         public override string ToString()
         {
