@@ -50,7 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dennisvg.DG.Common" Version="1.11.0" />
-    <PackageReference Include="Dennisvg.DG.Common.Http" Version="0.5.1" />
+    <PackageReference Include="Dennisvg.DG.Common.Http" Version="1.1.1" />
     <PackageReference Include="Dennisvg.DG.Cryptography" Version="1.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>

@@ -40,7 +40,7 @@ namespace DG.OneDrive
         public async Task<string> GetToken(string authorizationCode, string redirectUrl)
         {
             var request = FluentRequest.Post.To(_loginBaseUri + "/token")
-                .WithContent(FluentFormContent
+                .WithContent(FluentFormContentBuilder
                     .With("client_secret", _clientInfoProvider.ClientSecret)
                     .AndWith("scope", string.Join(" ", scopes))
                     .AndWith("client_id", _clientInfoProvider.ClientId)
@@ -59,7 +59,7 @@ namespace DG.OneDrive
             var decryptedToken = AccessToken.Decrypt(token);
 
             var request = FluentRequest.Post.To(_loginBaseUri + "/token")
-                .WithContent(FluentFormContent
+                .WithContent(FluentFormContentBuilder
                     .With("client_secret", _clientInfoProvider.ClientSecret)
                     .AndWith("scope", string.Join(" ", scopes))
                     .AndWith("client_id", _clientInfoProvider.ClientId)

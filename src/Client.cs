@@ -37,7 +37,7 @@ namespace DG.OneDrive
         public async Task<Office365User> GetCurrentUserAsync()
         {
             var request = FluentRequest.Get.To(_apiBaseUri + "/me")
-                .WithAuthorizationHeaderProvider(_accessTokenHeaderProvider);
+                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
 
             return await _client.SendAndDeserializeAsync<Office365User>(request);
         }
@@ -53,7 +53,7 @@ namespace DG.OneDrive
 
             string uri = _apiBaseUri + $"/me/drive/special/approot:/{information.Path.TrimStart('/')}/{information.NameWithExtension}:/createUploadSession";
             var request = FluentRequest.Post.To(uri)
-                .WithAuthorizationHeaderProvider(_accessTokenHeaderProvider)
+                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider))
                 .WithSerializedJsonContent(container);
 
             return await _client.SendAndDeserializeAsync<UploadSession>(request);
@@ -74,7 +74,7 @@ namespace DG.OneDrive
         public async Task CopyToStreamAsync(string fileId, Stream outputStream)
         {
             var request = FluentRequest.Get.To(_apiBaseUri + $"/me/drive/items/{fileId}/content")
-                .WithAuthorizationHeaderProvider(_accessTokenHeaderProvider);
+                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
 
             var response = await _client.SendAsync(request);
 
@@ -113,17 +113,12 @@ namespace DG.OneDrive
                     break;
                 }
 
-                HttpRequestMessage uploadMessage = new HttpRequestMessage(HttpMethod.Put, uri)
-                {
-                    Content = new ByteArrayContent(buffer, 0, byteCount)
-                };
-                uploadMessage.Content.Headers.Add("Content-Length", byteCount.ToString());
+                var request = FluentRequest.Put.To(uri)
+                    .WithHeader(FluentHeader.ContentLength(byteCount))
+                    .WithHeader(FluentHeader.ContentRange(offset, byteCount, totalLength))
+                    .WithByteArrayContent(buffer, byteCount);
 
-                string contentRange = $"bytes {offset}-{(offset + byteCount - 1)}/{totalLength}";
-
-                uploadMessage.Content.Headers.Add("Content-Range", contentRange);
-                lastResult = await _client.SendAsync(uploadMessage);
-
+                lastResult = await _client.SendAsync(request);
                 offset += byteCount;
             }
 
