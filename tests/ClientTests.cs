@@ -18,6 +18,18 @@ namespace DG.OneDrive.Tests
         }
 
         [Fact]
+        public void Client_DefaultUploadChunkSize_IsRecommended()
+        {
+            var client = SetupClient();
+
+            var size = client.UploadChunkSize;
+
+            Assert.True(size % 327680 == 0, "Upload chunk size should be a multiple of 320 KiB (327,680 bytes).");
+            Assert.True(size >= 5242880, "Default upload chunk size should be at least 5 MiB (5,242,880 bytes).");
+            Assert.True(size <= 10485760, "Default upload chunk size should be at least 5 MiB (10,485,760 bytes).");
+        }
+
+        [Fact]
         public async Task GetUser_WithAccessToken_ReturnsUser()
         {
             var client = SetupClient();

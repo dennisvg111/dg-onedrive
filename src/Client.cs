@@ -13,12 +13,32 @@ namespace DG.OneDrive
     public class Client
     {
         private const string _apiBaseUri = "https://graph.microsoft.com/v1.0";
-        private const int _maxUploadChunkSize = 41943040;
+        private const int _defaultUploadChunkSize = 7864320;
         private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithoutBaseAddress());
 
         private readonly IClientInfoProvider _clientInfoProvider;
 
         private AccessTokenHeaderProvider _accessTokenHeaderProvider;
+        private int _uploadChunkSize = _defaultUploadChunkSize;
+
+        /// <summary>
+        /// The size in bytes of the parts of a file that are upload at a time.
+        /// </summary>
+        public int UploadChunkSize
+        {
+            get
+            {
+                return _uploadChunkSize;
+            }
+            set
+            {
+                if (value < 0 || value % 327680 != 0)
+                {
+                    throw new ArgumentException($"{nameof(UploadChunkSize)} should be a multiple of 320 KiB (327,680 bytes).");
+                }
+                _uploadChunkSize = value;
+            }
+        }
 
         public Client(IClientInfoProvider clientInfoProvider)
         {
@@ -28,6 +48,15 @@ namespace DG.OneDrive
         public void SetAccessToken(string accessToken)
         {
             _accessTokenHeaderProvider = new AccessTokenHeaderProvider(new Authentication(_clientInfoProvider), accessToken);
+        }
+
+        /// <summary>
+        /// Sets the upload chunk size, in bytes.
+        /// </summary>
+        /// <param name="uploadChunkSize"></param>
+        public void SetUploadChunkSize(int uploadChunkSize)
+        {
+            _uploadChunkSize = uploadChunkSize;
         }
 
         /// <summary>
@@ -101,7 +130,7 @@ namespace DG.OneDrive
             }
 
             long totalLength = stream.Length;
-            byte[] buffer = new byte[_maxUploadChunkSize];
+            byte[] buffer = new byte[_defaultUploadChunkSize];
             long offset = 0;
 
             HttpResponseMessage lastResult = null;
