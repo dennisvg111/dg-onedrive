@@ -4,6 +4,7 @@ using DG.OneDrive.Serialized.DriveItems;
 using DG.OneDrive.Serialized.Resources;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -15,9 +16,9 @@ namespace DG.OneDrive
     /// </summary>
     public class Client
     {
-        private const string _apiBaseUri = "https://graph.microsoft.com/v1.0";
+        private const string _apiBaseUri = "https://graph.microsoft.com/v1.0/";
         private const int _defaultUploadChunkSize = 7864320;
-        private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithoutBaseAddress());
+        private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithBaseAddress(_apiBaseUri));
 
         private readonly IClientInfoProvider _clientInfoProvider;
 
@@ -80,8 +81,10 @@ namespace DG.OneDrive
         /// <returns></returns>
         public async Task<Office365User> GetCurrentUserAsync()
         {
-            var request = FluentRequest.Get.To(_apiBaseUri + "/me")
+            var request = FluentRequest.Get.To("me")
                 .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
+
+            var response = await _client.SendAsync(request);
 
             return await _client.SendAndDeserializeAsync<Office365User>(request);
         }
@@ -95,7 +98,7 @@ namespace DG.OneDrive
         {
             var container = UploadRequest.WithMetaData(information);
 
-            string uri = _apiBaseUri + $"/me/drive/special/approot:/{information.Path.TrimStart('/')}/{information.NameWithExtension}:/createUploadSession";
+            string uri = $"me/drive/special/approot:/{information.Path.TrimStart('/')}/{information.NameWithExtension}:/createUploadSession";
             var request = FluentRequest.Post.To(uri)
                 .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider))
                 .WithSerializedJsonContent(container);
@@ -129,7 +132,7 @@ namespace DG.OneDrive
         /// <returns></returns>
         public async Task CopyToStreamAsync(string fileId, Stream outputStream)
         {
-            var request = FluentRequest.Get.To(_apiBaseUri + $"/me/drive/items/{fileId}/content")
+            var request = FluentRequest.Get.To($"me/drive/items/{fileId}/content")
                 .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
 
             var response = await _client.SendAsync(request);
@@ -140,6 +143,52 @@ namespace DG.OneDrive
             {
                 outputStream.Position = 0;
             }
+        }
+
+        /// <summary>
+        /// Returns information, such as storage capacity, about the current drive.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Drive> GetDriveInformation()
+        {
+            var request = FluentRequest.Get.To("me/drive")
+                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
+
+            return await _client.SendAndDeserializeAsync<Drive>(request);
+        }
+
+        /// <summary>
+        /// Returns a list of children (folders and files) at the given <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path"></param>
+        public async Task<List<DriveItem>> GetChildren(string path)
+        {
+            var url = $"me/drive/special/approot:/{path.TrimStart('/')}:/children?top=2";
+
+            return await GetFeed<DriveItem>(url);
+        }
+
+        private async Task<List<T>> GetFeed<T>(string url)
+        {
+            List<T> result = new List<T>();
+            while (true)
+            {
+                var request = FluentRequest.Get.To(url)
+                    .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
+
+                var list = await _client.SendAndDeserializeAsync<ListResult<T>>(request);
+
+                result.AddRange(list.Values);
+
+                if (list.NextLink == null)
+                {
+                    break;
+                }
+
+                url = list.NextLink.ToString();
+            }
+
+            return result;
         }
 
         private async Task<DriveItem> UploadStreamAsync(Stream stream, Uri uri)
