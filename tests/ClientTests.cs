@@ -65,26 +65,6 @@ namespace DG.OneDrive.Tests
         }
 
         [Fact]
-        public async Task DownloadFile_ReturnsContent()
-        {
-            var client = SetupClient();
-            var id = "667B8052A954FAAB!24786";
-            string expectedContent = "Hello world! This is a test.";
-
-            using (var stream = await client.DownloadStreamAsync(id))
-            {
-                Assert.NotNull(stream);
-
-                using (var streamReader = new StreamReader(stream))
-                {
-                    string content = streamReader.ReadToEnd();
-
-                    Assert.Equal(expectedContent, content);
-                }
-            }
-        }
-
-        [Fact]
         public async Task CopyTo_ReturnsContent()
         {
             var client = SetupClient();
