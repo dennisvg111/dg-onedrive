@@ -12,8 +12,8 @@ namespace DG.OneDrive.Tests
     {
         private Client SetupClient()
         {
-            var client = new Client(EnvironmentClientInfoProvider.Instance);
-            client.SetAccessToken(EnvironmentClientInfoProvider.AccessToken);
+            var client = new Client(EnvironmentClientInfoProvider.Default);
+            client.SetAccessToken(EnvironmentAccessTokenProvider.AccessToken);
             return client;
         }
 
