@@ -2,6 +2,7 @@
 using DG.OneDrive.Serialized.Resources;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -15,6 +16,33 @@ namespace DG.OneDrive.Tests
             var client = new Client(EnvironmentClientInfoProvider.Default);
             client.SetAccessToken(EnvironmentAccessTokenProvider.AccessToken);
             return client;
+        }
+
+        [Fact]
+        public async Task GetDrive_ReturnsState()
+        {
+            var client = SetupClient();
+
+            var drive = await client.GetDriveInformation();
+
+            Assert.NotNull(drive);
+            Assert.True(drive.Quota.Total > 0);
+        }
+
+        [Fact]
+        public async Task GetChildren_ContainsTestFile()
+        {
+            var client = SetupClient();
+
+            var children = await client.GetChildren("/Tests");
+
+            Assert.NotNull(children);
+            if (!children.Any())
+            {
+                return;
+            }
+
+            Assert.Contains(children, file => file.description == "A test file");
         }
 
         [Fact]
