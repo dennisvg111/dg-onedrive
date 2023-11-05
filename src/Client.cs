@@ -119,13 +119,6 @@ namespace DG.OneDrive
             }
         }
 
-        public async Task<Stream> DownloadStreamAsync(string fileId)
-        {
-            MemoryStream stream = new MemoryStream();
-            await CopyToStreamAsync(fileId, stream);
-            return stream;
-        }
-
         private async Task<DriveItem> UploadStreamAsync(Stream stream, Uri uri)
         {
             if (stream.CanSeek)
