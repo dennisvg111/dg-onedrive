@@ -34,7 +34,11 @@ namespace DG.OneDrive
             {
                 if (value < 0 || value % 327680 != 0)
                 {
-                    throw new ArgumentException($"{nameof(UploadChunkSize)} should be a multiple of 320 KiB (327,680 bytes).");
+                    throw new ArgumentOutOfRangeException($"{nameof(UploadChunkSize)} should be a multiple of 320 KiB (327,680 bytes).");
+                }
+                if (value > 62914560)
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(UploadChunkSize)} should be less than 60 MiB (62914560 bytes).");
                 }
                 _uploadChunkSize = value;
             }
