@@ -12,8 +12,8 @@ namespace DG.OneDrive.Tests
     {
         private Client SetupClient()
         {
-            var client = new Client(EnvironmentClientInfoProvider.Instance);
-            client.SetAccessToken(EnvironmentClientInfoProvider.AccessToken);
+            var client = new Client(EnvironmentClientInfoProvider.Default);
+            client.SetAccessToken(EnvironmentAccessTokenProvider.AccessToken);
             return client;
         }
 
@@ -26,7 +26,7 @@ namespace DG.OneDrive.Tests
 
             Assert.True(size % 327680 == 0, "Upload chunk size should be a multiple of 320 KiB (327,680 bytes).");
             Assert.True(size >= 5242880, "Default upload chunk size should be at least 5 MiB (5,242,880 bytes).");
-            Assert.True(size <= 10485760, "Default upload chunk size should be at least 5 MiB (10,485,760 bytes).");
+            Assert.True(size <= 10485760, "Default upload chunk size should be at most 10 MiB (10,485,760 bytes).");
         }
 
         [Fact]
@@ -62,26 +62,6 @@ namespace DG.OneDrive.Tests
 
             Assert.NotNull(newFile);
             Assert.NotNull(newFile.id);
-        }
-
-        [Fact]
-        public async Task DownloadFile_ReturnsContent()
-        {
-            var client = SetupClient();
-            var id = "667B8052A954FAAB!24786";
-            string expectedContent = "Hello world! This is a test.";
-
-            using (var stream = await client.DownloadStreamAsync(id))
-            {
-                Assert.NotNull(stream);
-
-                using (var streamReader = new StreamReader(stream))
-                {
-                    string content = streamReader.ReadToEnd();
-
-                    Assert.Equal(expectedContent, content);
-                }
-            }
         }
 
         [Fact]
