@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace DG.OneDrive
 {
+    /// <summary>
+    /// A client to interact with the OneDrive API.
+    /// </summary>
     public class Client
     {
         private const string _apiBaseUri = "https://graph.microsoft.com/v1.0";
@@ -44,11 +47,19 @@ namespace DG.OneDrive
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="Client"/> with the given implementation of <see cref="IClientInfoProvider"/>.
+        /// </summary>
+        /// <param name="clientInfoProvider"></param>
         public Client(IClientInfoProvider clientInfoProvider)
         {
             _clientInfoProvider = clientInfoProvider;
         }
 
+        /// <summary>
+        /// Sets the access token for this client.
+        /// </summary>
+        /// <param name="accessToken"></param>
         public void SetAccessToken(string accessToken)
         {
             _accessTokenHeaderProvider = new AccessTokenHeaderProvider(new Authentication(_clientInfoProvider), accessToken);
@@ -92,6 +103,12 @@ namespace DG.OneDrive
             return await _client.SendAndDeserializeAsync<UploadSession>(request);
         }
 
+        /// <summary>
+        /// Uploads a stream to OneDrive, by creating a session using <see cref="CreateUploadSessionAsync(UploadMetaData)"/> and then uploading chunks of the stream to that session.
+        /// </summary>
+        /// <param name="fileData"></param>
+        /// <param name="stream"></param>
+        /// <returns></returns>
         public async Task<DriveItem> UploadStreamAsync(UploadMetaData fileData, Stream stream)
         {
             var session = await CreateUploadSessionAsync(fileData);
@@ -104,6 +121,12 @@ namespace DG.OneDrive
             return await UploadStreamAsync(stream, session.UploadUri);
         }
 
+        /// <summary>
+        /// Copies the content of the file with the given <paramref name="fileId"/> to <paramref name="outputStream"/>.
+        /// </summary>
+        /// <param name="fileId"></param>
+        /// <param name="outputStream"></param>
+        /// <returns></returns>
         public async Task CopyToStreamAsync(string fileId, Stream outputStream)
         {
             var request = FluentRequest.Get.To(_apiBaseUri + $"/me/drive/items/{fileId}/content")
