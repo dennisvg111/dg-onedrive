@@ -26,7 +26,7 @@ namespace DG.OneDrive.Tests
 
             Assert.True(size % 327680 == 0, "Upload chunk size should be a multiple of 320 KiB (327,680 bytes).");
             Assert.True(size >= 5242880, "Default upload chunk size should be at least 5 MiB (5,242,880 bytes).");
-            Assert.True(size <= 10485760, "Default upload chunk size should be at least 5 MiB (10,485,760 bytes).");
+            Assert.True(size <= 10485760, "Default upload chunk size should be at most 10 MiB (10,485,760 bytes).");
         }
 
         [Fact]
