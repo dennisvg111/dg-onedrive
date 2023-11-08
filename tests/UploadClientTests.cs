@@ -46,7 +46,7 @@ namespace DG.OneDrive.Tests
 
             using (var dummyFile = new MemoryStream(Encoding.UTF8.GetBytes(fileText)))
             {
-                newFile = await client.UploadStreamAsync(uploadInformation, dummyFile);
+                newFile = await client.ToNewSessionAsync(uploadInformation, dummyFile);
             }
 
             Assert.NotNull(newFile);

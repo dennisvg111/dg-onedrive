@@ -56,7 +56,7 @@ namespace DG.OneDrive
         /// </summary>
         /// <param name="information"></param>
         /// <returns></returns>
-        public async Task<UploadSession> CreateUploadSessionAsync(UploadMetaData information)
+        public async Task<UploadSession> CreateSessionAsync(UploadMetaData information)
         {
             var container = UploadRequest.WithMetaData(information);
 
@@ -76,20 +76,20 @@ namespace DG.OneDrive
         /// <param name="session"></param>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public async Task<DriveItem> UploadToSessionAsync(UploadSession session, Stream stream)
+        public async Task<DriveItem> ToSessionAsync(UploadSession session, Stream stream)
         {
             return await UploadStreamAsync(stream, session.UploadUri);
         }
 
         /// <summary>
-        /// Uploads a stream to OneDrive, by creating a session using <see cref="CreateUploadSessionAsync(UploadMetaData)"/> and then uploading chunks of the stream to that session.
+        /// Uploads a stream to OneDrive, by creating a session using <see cref="CreateSessionAsync(UploadMetaData)"/> and then uploading chunks of the stream to that session.
         /// </summary>
         /// <param name="fileData"></param>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public async Task<DriveItem> UploadStreamAsync(UploadMetaData fileData, Stream stream)
+        public async Task<DriveItem> ToNewSessionAsync(UploadMetaData fileData, Stream stream)
         {
-            var session = await CreateUploadSessionAsync(fileData);
+            var session = await CreateSessionAsync(fileData);
 
             if (session?.UploadUri == null)
             {
