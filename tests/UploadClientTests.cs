@@ -10,11 +10,11 @@ namespace DG.OneDrive.Tests
 {
     public class UploadClientTests
     {
-        private UploadClient SetupClient()
+        private Client SetupClient()
         {
             var client = new Client(EnvironmentClientInfoProvider.Default);
             client.SetAccessToken(EnvironmentAccessTokenProvider.AccessToken);
-            return client.Upload;
+            return client;
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace DG.OneDrive.Tests
         {
             var client = SetupClient();
 
-            var size = client.ChunkSize;
+            var size = client.Upload.ChunkSize;
 
             Assert.True(size % 327680 == 0, "Upload chunk size should be a multiple of 320 KiB (327,680 bytes).");
             Assert.True(size >= 5242880, "Default upload chunk size should be at least 5 MiB (5,242,880 bytes).");
@@ -30,7 +30,7 @@ namespace DG.OneDrive.Tests
         }
 
         [Fact]
-        public async Task UploadFile_ReturnsNewFileId()
+        public async Task UploadToNewSessionAsync_ReturnsNewFileId()
         {
             var client = SetupClient();
             var uploadInformation = new UploadMetaData()
@@ -46,7 +46,7 @@ namespace DG.OneDrive.Tests
 
             using (var dummyFile = new MemoryStream(Encoding.UTF8.GetBytes(fileText)))
             {
-                newFile = await client.ToNewSessionAsync(uploadInformation, dummyFile);
+                newFile = await client.Upload.ToNewSessionAsync(uploadInformation, dummyFile);
             }
 
             Assert.NotNull(newFile);
