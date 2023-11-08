@@ -27,4 +27,4 @@ jobs:
         ONEDRIVE_CLIENT_ID: ${{ secrets.ONEDRIVE_CLIENT_ID }}
         ONEDRIVE_CLIENT_SECRET: ${{ secrets.ONEDRIVE_CLIENT_SECRET }}
         ONEDRIVE_ACCESS_TOKEN: ${{ secrets.ONEDRIVE_ACCESS_TOKEN }}
-      run: dotnet test *.sln --no-build --verbosity normal
+      run: dotnet test *.sln --no-build --verbosity normal --blame-hang-timeout 60s --blame-hang-dump-type mini
