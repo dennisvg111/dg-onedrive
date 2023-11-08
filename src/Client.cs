@@ -1,7 +1,6 @@
 ﻿using DG.Common.Http.Fluent;
 using DG.OneDrive.Serialized;
 using DG.OneDrive.Serialized.DriveItems;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -18,9 +17,14 @@ namespace DG.OneDrive
 
         private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithBaseAddress(_apiBaseUri));
 
+        private readonly UploadClient _upload;
         private readonly IClientInfoProvider _clientInfoProvider;
-
         private AccessTokenHeaderProvider _accessTokenHeaderProvider;
+
+        /// <summary>
+        /// Provides functionality for creating upload sessions, and uploading files.
+        /// </summary>
+        public UploadClient Upload => _upload;
 
         /// <summary>
         /// Initializes a new instance of <see cref="Client"/> with the given implementation of <see cref="IClientInfoProvider"/>.
@@ -29,20 +33,7 @@ namespace DG.OneDrive
         public Client(IClientInfoProvider clientInfoProvider)
         {
             _clientInfoProvider = clientInfoProvider;
-            _upload = new Lazy<UploadClient>(() => new UploadClient(null));
-        }
-
-        private Lazy<UploadClient> _upload;
-
-        /// <summary>
-        /// Provides functionality for creating upload sessions, and uploading files.
-        /// </summary>
-        public UploadClient Upload
-        {
-            get
-            {
-                return _upload.Value;
-            }
+            _upload = new UploadClient(() => _accessTokenHeaderProvider);
         }
 
         /// <summary>
@@ -52,7 +43,6 @@ namespace DG.OneDrive
         public void SetAccessToken(string accessToken)
         {
             _accessTokenHeaderProvider = new AccessTokenHeaderProvider(new Authentication(_clientInfoProvider), accessToken);
-            _upload = new Lazy<UploadClient>(() => new UploadClient(_accessTokenHeaderProvider));
         }
 
         /// <summary>

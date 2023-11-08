@@ -20,7 +20,7 @@ namespace DG.OneDrive
 
         private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithBaseAddress(_apiBaseUri));
 
-        private readonly AccessTokenHeaderProvider _accessTokenHeaderProvider;
+        private readonly Func<AccessTokenHeaderProvider> _authorizationProvider;
         private int _uploadChunkSize = _defaultUploadChunkSize;
 
         /// <summary>
@@ -46,9 +46,9 @@ namespace DG.OneDrive
             }
         }
 
-        internal UploadClient(AccessTokenHeaderProvider accessTokenHeaderProvider)
+        internal UploadClient(Func<AccessTokenHeaderProvider> accessTokenHeaderProvider)
         {
-            _accessTokenHeaderProvider = accessTokenHeaderProvider;
+            _authorizationProvider = accessTokenHeaderProvider;
         }
 
         /// <summary>
@@ -58,15 +58,13 @@ namespace DG.OneDrive
         /// <returns></returns>
         public async Task<UploadSession> CreateUploadSessionAsync(UploadMetaData information)
         {
-            if (_accessTokenHeaderProvider == null)
-            {
-                throw new UnauthorizedAccessException("Cannot create new upload sessions before access token is set.");
-            }
             var container = UploadRequest.WithMetaData(information);
+
+            var authorization = _authorizationProvider();
 
             string uri = $"me/drive/special/approot:/{information.Path.TrimStart('/')}/{information.NameWithExtension}:/createUploadSession";
             var request = FluentRequest.Post.To(uri)
-                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider))
+                .WithHeader(FluentHeader.Authorization(authorization))
                 .WithSerializedJsonContent(container);
 
             return await _client.SendAndDeserializeAsync<UploadSession>(request);
