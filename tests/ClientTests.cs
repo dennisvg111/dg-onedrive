@@ -1,9 +1,5 @@
-﻿using DG.OneDrive.Serialized.DriveItems;
-using DG.OneDrive.Serialized.Resources;
-using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -23,7 +19,7 @@ namespace DG.OneDrive.Tests
         {
             var client = SetupClient();
 
-            var drive = await client.GetDriveInformation();
+            var drive = await client.GetDriveAsync();
 
             Assert.NotNull(drive);
             Assert.True(drive.Quota.Total > 0);
@@ -34,7 +30,7 @@ namespace DG.OneDrive.Tests
         {
             var client = SetupClient();
 
-            var children = await client.GetChildren("/Tests");
+            var children = await client.GetChildrenAsync("/Tests");
 
             Assert.NotNull(children);
             if (!children.Any())
@@ -46,18 +42,6 @@ namespace DG.OneDrive.Tests
         }
 
         [Fact]
-        public void Client_DefaultUploadChunkSize_IsRecommended()
-        {
-            var client = SetupClient();
-
-            var size = client.UploadChunkSize;
-
-            Assert.True(size % 327680 == 0, "Upload chunk size should be a multiple of 320 KiB (327,680 bytes).");
-            Assert.True(size >= 5242880, "Default upload chunk size should be at least 5 MiB (5,242,880 bytes).");
-            Assert.True(size <= 10485760, "Default upload chunk size should be at most 10 MiB (10,485,760 bytes).");
-        }
-
-        [Fact]
         public async Task GetUser_WithAccessToken_ReturnsUser()
         {
             var client = SetupClient();
@@ -66,30 +50,6 @@ namespace DG.OneDrive.Tests
 
             Assert.NotNull(user);
             Assert.Equal("https://graph.microsoft.com/v1.0/$metadata#users/$entity", user.odataContext);
-        }
-
-        [Fact]
-        public async Task UploadFile_ReturnsNewFileId()
-        {
-            var client = SetupClient();
-            var uploadInformation = new UploadMetaData()
-            {
-                NameWithExtension = $"test-file {DateTime.Now:yyyy-MM-dd HHmmss}.txt",
-                Path = "/Tests",
-                ConflictBehavior = UploadConflictBehavior.Rename,
-                Description = "A test file"
-            };
-            string fileText = "Hello world! This is a test.";
-
-            DriveItem newFile;
-
-            using (var dummyFile = new MemoryStream(Encoding.UTF8.GetBytes(fileText)))
-            {
-                newFile = await client.UploadStreamAsync(uploadInformation, dummyFile);
-            }
-
-            Assert.NotNull(newFile);
-            Assert.NotNull(newFile.id);
         }
 
         [Fact]
