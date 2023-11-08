@@ -1,8 +1,6 @@
 ﻿using DG.Common.Http.Fluent;
 using DG.OneDrive.Serialized;
 using DG.OneDrive.Serialized.DriveItems;
-using DG.OneDrive.Serialized.Resources;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,36 +15,12 @@ namespace DG.OneDrive
     public class Client
     {
         private const string _apiBaseUri = "https://graph.microsoft.com/v1.0/";
-        private const int _defaultUploadChunkSize = 7864320;
+
         private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithBaseAddress(_apiBaseUri));
 
         private readonly IClientInfoProvider _clientInfoProvider;
 
         private AccessTokenHeaderProvider _accessTokenHeaderProvider;
-        private int _uploadChunkSize = _defaultUploadChunkSize;
-
-        /// <summary>
-        /// The size in bytes of the parts of a file that are upload at a time.
-        /// </summary>
-        public int UploadChunkSize
-        {
-            get
-            {
-                return _uploadChunkSize;
-            }
-            set
-            {
-                if (value < 0 || value % 327680 != 0)
-                {
-                    throw new ArgumentOutOfRangeException($"{nameof(UploadChunkSize)} should be a multiple of 320 KiB (327,680 bytes).");
-                }
-                if (value > 62914560)
-                {
-                    throw new ArgumentOutOfRangeException($"{nameof(UploadChunkSize)} should be less than 60 MiB (62914560 bytes).");
-                }
-                _uploadChunkSize = value;
-            }
-        }
 
         /// <summary>
         /// Initializes a new instance of <see cref="Client"/> with the given implementation of <see cref="IClientInfoProvider"/>.
@@ -55,6 +29,20 @@ namespace DG.OneDrive
         public Client(IClientInfoProvider clientInfoProvider)
         {
             _clientInfoProvider = clientInfoProvider;
+            _upload = new Lazy<UploadClient>(() => new UploadClient(null));
+        }
+
+        private Lazy<UploadClient> _upload;
+
+        /// <summary>
+        /// Provides functionality for creating upload sessions, and uploading files.
+        /// </summary>
+        public UploadClient Upload
+        {
+            get
+            {
+                return _upload.Value;
+            }
         }
 
         /// <summary>
@@ -64,15 +52,7 @@ namespace DG.OneDrive
         public void SetAccessToken(string accessToken)
         {
             _accessTokenHeaderProvider = new AccessTokenHeaderProvider(new Authentication(_clientInfoProvider), accessToken);
-        }
-
-        /// <summary>
-        /// Sets the upload chunk size, in bytes.
-        /// </summary>
-        /// <param name="uploadChunkSize"></param>
-        public void SetUploadChunkSize(int uploadChunkSize)
-        {
-            _uploadChunkSize = uploadChunkSize;
+            _upload = new Lazy<UploadClient>(() => new UploadClient(_accessTokenHeaderProvider));
         }
 
         /// <summary>
@@ -84,44 +64,7 @@ namespace DG.OneDrive
             var request = FluentRequest.Get.To("me")
                 .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
 
-            var response = await _client.SendAsync(request);
-
             return await _client.SendAndDeserializeAsync<Office365User>(request);
-        }
-
-        /// <summary>
-        /// Creates a new upload session.
-        /// </summary>
-        /// <param name="information"></param>
-        /// <returns></returns>
-        public async Task<UploadSession> CreateUploadSessionAsync(UploadMetaData information)
-        {
-            var container = UploadRequest.WithMetaData(information);
-
-            string uri = $"me/drive/special/approot:/{information.Path.TrimStart('/')}/{information.NameWithExtension}:/createUploadSession";
-            var request = FluentRequest.Post.To(uri)
-                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider))
-                .WithSerializedJsonContent(container);
-
-            return await _client.SendAndDeserializeAsync<UploadSession>(request);
-        }
-
-        /// <summary>
-        /// Uploads a stream to OneDrive, by creating a session using <see cref="CreateUploadSessionAsync(UploadMetaData)"/> and then uploading chunks of the stream to that session.
-        /// </summary>
-        /// <param name="fileData"></param>
-        /// <param name="stream"></param>
-        /// <returns></returns>
-        public async Task<DriveItem> UploadStreamAsync(UploadMetaData fileData, Stream stream)
-        {
-            var session = await CreateUploadSessionAsync(fileData);
-
-            if (session.UploadUri == null)
-            {
-                throw new System.Exception();
-            }
-
-            return await UploadStreamAsync(stream, session.UploadUri);
         }
 
         /// <summary>
@@ -149,7 +92,7 @@ namespace DG.OneDrive
         /// Returns information, such as storage capacity, about the current drive.
         /// </summary>
         /// <returns></returns>
-        public async Task<Drive> GetDriveInformation()
+        public async Task<Drive> GetDriveAsync()
         {
             var request = FluentRequest.Get.To("me/drive")
                 .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
@@ -161,7 +104,7 @@ namespace DG.OneDrive
         /// Returns a list of children (folders and files) at the given <paramref name="path"/>.
         /// </summary>
         /// <param name="path"></param>
-        public async Task<List<DriveItem>> GetChildren(string path)
+        public async Task<List<DriveItem>> GetChildrenAsync(string path)
         {
             var url = $"me/drive/special/approot:/{path.TrimStart('/')}:/children?top=2";
 
@@ -189,39 +132,6 @@ namespace DG.OneDrive
             }
 
             return result;
-        }
-
-        private async Task<DriveItem> UploadStreamAsync(Stream stream, Uri uri)
-        {
-            if (stream.CanSeek)
-            {
-                stream.Seek(0, SeekOrigin.Begin);
-            }
-
-            long totalLength = stream.Length;
-            byte[] buffer = new byte[_defaultUploadChunkSize];
-            long offset = 0;
-
-            HttpResponseMessage lastResult = null;
-            while (true)
-            {
-                int byteCount = stream.Read(buffer, 0, buffer.Length);
-                if (byteCount <= 0)
-                {
-                    break;
-                }
-
-                var request = FluentRequest.Put.To(uri)
-                    .WithHeader(FluentHeader.ContentLength(byteCount))
-                    .WithHeader(FluentHeader.ContentRange(offset, byteCount, totalLength))
-                    .WithByteArrayContent(buffer, byteCount);
-
-                lastResult = await _client.SendAsync(request);
-                offset += byteCount;
-            }
-
-            var json = await lastResult.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<DriveItem>(json);
         }
     }
 }

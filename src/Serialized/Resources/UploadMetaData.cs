@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using System;
 
 namespace DG.OneDrive.Serialized.Resources
 {
@@ -8,23 +7,13 @@ namespace DG.OneDrive.Serialized.Resources
     /// </summary>
     public class UploadMetaData
     {
+
+#pragma warning disable IDE0051 // (Remove unused private members) This property is used for serialization.
+
         [JsonProperty("@microsoft.graph.conflictBehavior")]
-        private string _conflictBehavior
-        {
-            get
-            {
-                return ConflictBehavior.ToString().ToLowerInvariant();
-            }
-            set
-            {
-                UploadConflictBehavior behavior;
-                if (!Enum.TryParse(value, true, out behavior))
-                {
-                    behavior = UploadConflictBehavior.Fail;
-                }
-                ConflictBehavior = behavior;
-            }
-        }
+        private string _conflictBehavior => ConflictBehavior.ToString().ToLowerInvariant();
+
+#pragma warning restore IDE0051
 
         /// <summary>
         /// Describes the action to take when another file with the same name and location already exists.
