@@ -67,7 +67,7 @@ namespace DG.OneDrive
                 .WithHeader(FluentHeader.Authorization(authorization))
                 .WithSerializedJsonContent(container);
 
-            return await _client.SendAndDeserializeAsync<UploadSession>(request);
+            return await _client.SendAndDeserializeAsync<UploadSession>(request).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace DG.OneDrive
         /// <returns></returns>
         public async Task<DriveItem> ToSessionAsync(UploadSession session, Stream stream)
         {
-            return await UploadStreamAsync(stream, session.UploadUri);
+            return await UploadStreamAsync(stream, session.UploadUri).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -89,14 +89,14 @@ namespace DG.OneDrive
         /// <returns></returns>
         public async Task<DriveItem> ToNewSessionAsync(UploadMetaData fileData, Stream stream)
         {
-            var session = await CreateSessionAsync(fileData);
+            var session = await CreateSessionAsync(fileData).ConfigureAwait(false);
 
             if (session?.UploadUri == null)
             {
                 throw new OneDriveUploadSessionException(fileData);
             }
 
-            return await UploadStreamAsync(stream, session.UploadUri);
+            return await UploadStreamAsync(stream, session.UploadUri).ConfigureAwait(false);
         }
 
         private async Task<DriveItem> UploadStreamAsync(Stream stream, Uri uri)
@@ -124,7 +124,7 @@ namespace DG.OneDrive
                     .WithHeader(FluentHeader.ContentRange(offset, byteCount, totalLength))
                     .WithByteArrayContent(buffer, byteCount);
 
-                lastResult = await _client.SendAsync(request);
+                lastResult = await _client.SendAsync(request).ConfigureAwait(false);
                 offset += byteCount;
             }
 
@@ -133,7 +133,7 @@ namespace DG.OneDrive
                 throw new EndOfStreamException("End of stream reached before uploading could start.");
             }
 
-            var json = await lastResult.Content.ReadAsStringAsync();
+            var json = await lastResult.Content.ReadAsStringAsync().ConfigureAwait(false);
             return JsonConvert.DeserializeObject<DriveItem>(json);
         }
     }
