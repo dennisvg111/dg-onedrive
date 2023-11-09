@@ -54,7 +54,7 @@ namespace DG.OneDrive
             var request = FluentRequest.Get.To("me")
                 .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
 
-            return await _client.SendAndDeserializeAsync<Office365User>(request);
+            return await _client.SendAndDeserializeAsync<Office365User>(request).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace DG.OneDrive
 
             var response = await _client.SendAsync(request);
 
-            await response.Content.CopyToAsync(outputStream);
+            await response.Content.CopyToAsync(outputStream).ConfigureAwait(false);
 
             if (outputStream.CanSeek)
             {
@@ -87,7 +87,7 @@ namespace DG.OneDrive
             var request = FluentRequest.Get.To("me/drive")
                 .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
 
-            return await _client.SendAndDeserializeAsync<Drive>(request);
+            return await _client.SendAndDeserializeAsync<Drive>(request).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace DG.OneDrive
         {
             var url = $"me/drive/special/approot:/{path.TrimStart('/')}:/children?top=2";
 
-            return await GetFeed<DriveItem>(url);
+            return await GetFeed<DriveItem>(url).ConfigureAwait(false);
         }
 
         private async Task<List<T>> GetFeed<T>(string url)
@@ -109,7 +109,7 @@ namespace DG.OneDrive
                 var request = FluentRequest.Get.To(url)
                     .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
 
-                var list = await _client.SendAndDeserializeAsync<ListResult<T>>(request);
+                var list = await _client.SendAndDeserializeAsync<ListResult<T>>(request).ConfigureAwait(false);
 
                 result.AddRange(list.Values);
 
