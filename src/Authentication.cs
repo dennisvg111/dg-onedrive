@@ -49,7 +49,7 @@ namespace DG.OneDrive
                     .AndWith("grant_type", "authorization_code")
                 );
 
-            var token = await _client.SendAndDeserializeAsync<AccessToken>(request);
+            var token = await _client.SendAndDeserializeAsync<AccessToken>(request).ConfigureAwait(false);
 
             return token.Encrypt();
         }
@@ -67,7 +67,7 @@ namespace DG.OneDrive
                     .AndWith("grant_type", "refresh_token")
                 );
 
-            var refreshedToken = await _client.SendAndDeserializeAsync<AccessToken>(request);
+            var refreshedToken = await _client.SendAndDeserializeAsync<AccessToken>(request).ConfigureAwait(false);
 
             return refreshedToken.Encrypt();
         }
