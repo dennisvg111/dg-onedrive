@@ -1,9 +1,12 @@
-﻿using DG.Common.Http.Fluent;
+﻿using DG.Common;
+using DG.Common.Http.Authorization.OAuth2;
+using DG.Common.Http.Authorization.OAuth2.Data;
+using DG.Common.Http.Fluent;
+using DG.OneDrive.Authorization;
 using DG.OneDrive.Serialized;
 using DG.OneDrive.Serialized.DriveItems;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace DG.OneDrive
@@ -14,12 +17,10 @@ namespace DG.OneDrive
     public class Client
     {
         private const string _apiBaseUri = "https://graph.microsoft.com/v1.0/";
-
-        private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithBaseAddress(_apiBaseUri));
+        private static readonly HttpClientSettings _clientSettings = HttpClientSettings.WithBaseAddress(_apiBaseUri);
 
         private readonly UploadClient _upload;
-        private readonly IClientInfoProvider _clientInfoProvider;
-        private AccessTokenHeaderProvider _accessTokenHeaderProvider;
+        private readonly OAuthFlow<OneDriveOAuthLogic> _authorization;
 
         /// <summary>
         /// Provides functionality for creating upload sessions, and uploading files.
@@ -29,20 +30,11 @@ namespace DG.OneDrive
         /// <summary>
         /// Initializes a new instance of <see cref="Client"/> with the given implementation of <see cref="IClientInfoProvider"/>.
         /// </summary>
-        /// <param name="clientInfoProvider"></param>
-        public Client(IClientInfoProvider clientInfoProvider)
+        /// <param name="authorization"></param>
+        public Client(OAuthFlow<OneDriveOAuthLogic> authorization)
         {
-            _clientInfoProvider = clientInfoProvider;
-            _upload = new UploadClient(() => _accessTokenHeaderProvider);
-        }
-
-        /// <summary>
-        /// Sets the access token for this client.
-        /// </summary>
-        /// <param name="accessToken"></param>
-        public void SetAccessToken(string accessToken)
-        {
-            _accessTokenHeaderProvider = new AccessTokenHeaderProvider(new Authentication(_clientInfoProvider), accessToken);
+            _authorization = authorization;
+            _upload = new UploadClient(authorization);
         }
 
         /// <summary>
@@ -52,9 +44,10 @@ namespace DG.OneDrive
         public async Task<Office365User> GetCurrentUserAsync()
         {
             var request = FluentRequest.Get.To("me")
-                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
+                .WithAuthorization(_authorization);
 
-            return await _client.SendAndDeserializeAsync<Office365User>(request).ConfigureAwait(false);
+            var client = HttpClientProvider.ClientForSettings(_clientSettings);
+            return await client.SendAndDeserializeAsync<Office365User>(request).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -66,9 +59,10 @@ namespace DG.OneDrive
         public async Task CopyToStreamAsync(string fileId, Stream outputStream)
         {
             var request = FluentRequest.Get.To($"me/drive/items/{fileId}/content")
-                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
+                .WithAuthorization(_authorization);
 
-            var response = await _client.SendAsync(request);
+            var client = HttpClientProvider.ClientForSettings(_clientSettings);
+            var response = await client.SendAsync(request);
 
             await response.Content.CopyToAsync(outputStream).ConfigureAwait(false);
 
@@ -85,9 +79,10 @@ namespace DG.OneDrive
         public async Task<Drive> GetDriveAsync()
         {
             var request = FluentRequest.Get.To("me/drive")
-                .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
+                .WithAuthorization(_authorization);
 
-            return await _client.SendAndDeserializeAsync<Drive>(request).ConfigureAwait(false);
+            var client = HttpClientProvider.ClientForSettings(_clientSettings);
+            return await client.SendAndDeserializeAsync<Drive>(request).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -107,9 +102,10 @@ namespace DG.OneDrive
             while (true)
             {
                 var request = FluentRequest.Get.To(url)
-                    .WithHeader(FluentHeader.Authorization(_accessTokenHeaderProvider));
+                .WithAuthorization(_authorization);
 
-                var list = await _client.SendAndDeserializeAsync<ListResult<T>>(request).ConfigureAwait(false);
+                var client = HttpClientProvider.ClientForSettings(_clientSettings);
+                var list = await client.SendAndDeserializeAsync<ListResult<T>>(request).ConfigureAwait(false);
 
                 result.AddRange(list.Values);
 
@@ -122,6 +118,43 @@ namespace DG.OneDrive
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Serializes the current access token for this client to a string.
+        /// </summary>
+        /// <returns></returns>
+        public string SerializeAccessToken()
+        {
+            var data = _authorization.Export();
+            var token = AccessToken.From(data);
+            return token.Encrypt();
+        }
+
+        /// <summary>
+        /// Initialize a new client from the given serialized access token created using <see cref="SerializeAccessToken()"/>.
+        /// </summary>
+        /// <param name="clientInfo"></param>
+        /// <param name="accessToken"></param>
+        /// <returns></returns>
+        public static Client FromSerializedAccessToken(IClientInfoProvider clientInfo, string accessToken)
+        {
+            var token = AccessToken.Decrypt(accessToken);
+            var oauthData = new OAuthData()
+            {
+                Started = token.created,
+                Scopes = token.scope?.Split('+', ' ') ?? new string[0],
+                CallBackUri = null,
+                AccessToken = token.access_token,
+                AccessTokenExpirationDate = token.ExpirationDate,
+                RefreshToken = token.refresh_token,
+
+                State = Uulsid.NewUulsid().ToString()
+            };
+
+            var logic = new OneDriveOAuthLogic(clientInfo);
+            var oauthFlow = OAuthFlow.ContinueFor(logic, oauthData);
+            return new Client(oauthFlow);
         }
     }
 }

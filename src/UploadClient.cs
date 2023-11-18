@@ -1,4 +1,6 @@
-﻿using DG.Common.Http.Fluent;
+﻿using DG.Common.Http.Authorization.OAuth2;
+using DG.Common.Http.Fluent;
+using DG.OneDrive.Authorization;
 using DG.OneDrive.Exceptions;
 using DG.OneDrive.Serialized.DriveItems;
 using DG.OneDrive.Serialized.Resources;
@@ -17,10 +19,10 @@ namespace DG.OneDrive
     {
         private const string _apiBaseUri = "https://graph.microsoft.com/v1.0/";
         private const int _defaultUploadChunkSize = 7864320;
+        private readonly OAuthFlow<OneDriveOAuthLogic> _authorization;
 
         private static HttpClient _client => HttpClientProvider.ClientForSettings(HttpClientSettings.WithBaseAddress(_apiBaseUri));
 
-        private readonly Func<AccessTokenHeaderProvider> _authorizationProvider;
         private int _uploadChunkSize = _defaultUploadChunkSize;
 
         /// <summary>
@@ -46,9 +48,9 @@ namespace DG.OneDrive
             }
         }
 
-        internal UploadClient(Func<AccessTokenHeaderProvider> accessTokenHeaderProvider)
+        internal UploadClient(OAuthFlow<OneDriveOAuthLogic> authorization)
         {
-            _authorizationProvider = accessTokenHeaderProvider;
+            _authorization = authorization;
         }
 
         /// <summary>
@@ -60,11 +62,9 @@ namespace DG.OneDrive
         {
             var container = UploadRequest.WithMetaData(information);
 
-            var authorization = _authorizationProvider();
-
             string uri = $"me/drive/special/approot:/{information.Path.TrimStart('/')}/{information.NameWithExtension}:/createUploadSession";
             var request = FluentRequest.Post.To(uri)
-                .WithHeader(FluentHeader.Authorization(authorization))
+                .WithAuthorization(_authorization)
                 .WithSerializedJsonContent(container);
 
             return await _client.SendAndDeserializeAsync<UploadSession>(request).ConfigureAwait(false);
