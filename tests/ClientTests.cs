@@ -9,8 +9,7 @@ namespace DG.OneDrive.Tests
     {
         private Client SetupClient()
         {
-            var client = new Client(EnvironmentClientInfoProvider.Default);
-            client.SetAccessToken(EnvironmentAccessTokenProvider.AccessToken);
+            var client = Client.FromSerializedAccessToken(EnvironmentClientInfoProvider.Default, EnvironmentAccessTokenProvider.AccessToken);
             return client;
         }
 

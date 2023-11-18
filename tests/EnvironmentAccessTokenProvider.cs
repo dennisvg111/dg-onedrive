@@ -2,7 +2,7 @@
 
 namespace DG.OneDrive.Tests
 {
-    public class EnvironmentAccessTokenProvider
+    public static class EnvironmentAccessTokenProvider
     {
         public const string AccessTokenVariableName = "ONEDRIVE_ACCESS_TOKEN";
 

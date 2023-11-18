@@ -3,7 +3,7 @@
     <ProjectGuid>{9F5EEB80-2CAC-4AD6-985A-603A3F21E743}</ProjectGuid>
     <TargetFramework>net452</TargetFramework>
     <AssemblyTitle>DG.OneDrive</AssemblyTitle>
-    <AssemblyVersion>0.3.4</AssemblyVersion>
+    <AssemblyVersion>0.3.7</AssemblyVersion>
     <Product>DG.OneDrive</Product>
     <Copyright>Copyright ©  2023</Copyright>
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -49,9 +49,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Dennisvg.DG.Common" Version="1.11.1" />
-    <PackageReference Include="Dennisvg.DG.Common.Http" Version="1.1.5" />
-    <PackageReference Include="Dennisvg.DG.Cryptography" Version="1.2.1" />
+    <PackageReference Include="Dennisvg.DG.Common" Version="1.13.1" />
+    <PackageReference Include="Dennisvg.DG.Common.Http" Version="1.2.15" />
+    <PackageReference Include="Dennisvg.DG.Cryptography" Version="1.2.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
   <ItemGroup>
