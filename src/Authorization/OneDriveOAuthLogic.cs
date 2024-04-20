@@ -1,4 +1,5 @@
-﻿using DG.Common.Http.Authorization.OAuth2.Data;
+﻿using DG.Common.Http;
+using DG.Common.Http.Authorization.OAuth2.Data;
 using DG.Common.Http.Authorization.OAuth2.Interfaces;
 using DG.Common.Http.Fluent;
 using DG.Common.Threading;
@@ -49,7 +50,7 @@ namespace DG.OneDrive.Authorization
                 .WithQuery("redirect_uri", request.CallBackUri.OriginalString)
                 .WithQuery("response_mode", "query")
                 .WithQuery("prompt", "select_account")
-                .WithQuery("scope", string.Join("+", request.Scopes))
+                .WithQuery("scope", string.Join(" ", request.Scopes))
                 .WithQuery("state", request.State)
                 .Uri;
         }
