@@ -1,4 +1,5 @@
-﻿using DG.Common.Http.Authorization.OAuth2.Data;
+﻿using DG.Common.Http;
+using DG.Common.Http.Authorization.OAuth2.Data;
 using DG.Common.Http.Authorization.OAuth2.Interfaces;
 using DG.Common.Http.Fluent;
 using DG.Common.Threading;
