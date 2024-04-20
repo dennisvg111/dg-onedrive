@@ -1,4 +1,5 @@
-﻿using DG.Common.Http.Authorization.OAuth2;
+﻿using DG.Common.Http;
+using DG.Common.Http.Authorization.OAuth2;
 using DG.Common.Http.Fluent;
 using DG.OneDrive.Authorization;
 using DG.OneDrive.Exceptions;
