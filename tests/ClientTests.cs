@@ -11,6 +11,9 @@ namespace DG.OneDrive.Tests
 {
     public class ClientTests
     {
+        private const string _helloWorldFileId = "667B8052A954FAAB!24786";
+        private const string _largeFileId = "667B8052A954FAAB!28518";
+
         private Client SetupClient()
         {
             var client = Client.FromSerializedAccessToken(EnvironmentClientInfoProvider.Default, EnvironmentAccessTokenProvider.AccessToken);
@@ -59,11 +62,10 @@ namespace DG.OneDrive.Tests
         public async Task CopyTo_ReturnsContent()
         {
             var client = SetupClient();
-            var id = "667B8052A954FAAB!24786";
 
             using (var stream = new MemoryStream())
             {
-                await client.CopyToStreamAsync(id, stream);
+                await client.CopyToStreamAsync(_helloWorldFileId, stream);
 
                 using (var streamReader = new StreamReader(stream))
                 {
@@ -75,25 +77,47 @@ namespace DG.OneDrive.Tests
 
         private static readonly Process _currentProcess = Process.GetCurrentProcess();
 
-        [Fact()]//Skip = "Large memory footprint test, only run in local environments")]
+        [Fact(Skip = "Large memory footprint test, only run in local environments")]
         public async Task CopyTo_MemoryFootprint()
         {
             var client = SetupClient();
-            var id = "667B8052A954FAAB!28514";
 
             _currentProcess.Refresh();
             var usedMemoryBefore = _currentProcess.PrivateMemorySize64;
 
             using (var file = new DummyFile())
             {
-                await client.CopyToStreamAsync(id, file.GetStream());
+                var fileStream = file.GetStream();
+                await client.CopyToStreamAsync(_largeFileId, fileStream);
+
+                _currentProcess.Refresh();
+                var usedMemoryAfter = _currentProcess.PrivateMemorySize64;
+                var difference = ByteSize.FromBytes(usedMemoryAfter - usedMemoryBefore);
+
+                Assert.True(difference > ByteSize.FromMB(110), $"Expected more than 110MB, actual {difference}");
             }
+        }
+
+        [Fact(Skip = "Large memory footprint test, only run in local environments")]
+        public async Task GetContent_MemoryFootprint()
+        {
+            var client = SetupClient();
 
             _currentProcess.Refresh();
-            var usedMemoryAfter = _currentProcess.PrivateMemorySize64;
-            var difference = ByteSize.FromBytes(usedMemoryAfter - usedMemoryBefore);
+            var usedMemoryBefore = _currentProcess.PrivateMemorySize64;
 
-            Assert.True(difference < ByteSize.FromMB(2), $"Expected less than 500MB, actual {difference}");
+            using (var file = new DummyFile())
+            using (var content = await client.GetContent(_largeFileId))
+            {
+                var fileStream = file.GetStream();
+                content.CopyTo(fileStream, 10485760);
+
+                _currentProcess.Refresh();
+                var usedMemoryAfter = _currentProcess.PrivateMemorySize64;
+                var difference = ByteSize.FromBytes(usedMemoryAfter - usedMemoryBefore);
+
+                Assert.True(difference < ByteSize.FromMB(110), $"Expected less than 110MB, actual {difference}");
+            }
         }
 
         internal class DummyFile : IDisposable
@@ -111,7 +135,7 @@ namespace DG.OneDrive.Tests
             {
                 Directory.CreateDirectory(@"C:\tmp");
                 _name = @"C:\tmp\" + Guid.NewGuid().ToString().ToLowerInvariant() + ".dummy";
-                fs = new FileStream(_name, FileMode.CreateNew);
+                fs = File.Create(_name, 10485760, FileOptions.WriteThrough);
             }
 
             public Stream GetStream()

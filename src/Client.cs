@@ -18,7 +18,7 @@ namespace DG.OneDrive
     public class Client
     {
         private const string _apiBaseUri = "https://graph.microsoft.com/v1.0/";
-        private static readonly HttpClientSettings _clientSettings = HttpClientSettings.WithBaseAddress(_apiBaseUri);
+        internal static readonly HttpClientSettings _clientSettings = HttpClientSettings.WithBaseAddress(_apiBaseUri);
 
         private readonly UploadClient _upload;
         private readonly OAuthFlow<OneDriveOAuthLogic> _authorization;
@@ -71,6 +71,11 @@ namespace DG.OneDrive
             {
                 outputStream.Position = 0;
             }
+        }
+
+        public async Task<DriveItemStream> GetContent(string fileId)
+        {
+            return new DriveItemStream(fileId, _authorization);
         }
 
         /// <summary>
