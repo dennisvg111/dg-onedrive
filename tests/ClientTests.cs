@@ -1,4 +1,5 @@
 ﻿using DG.Common;
+using FluentAssertions;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -23,8 +24,8 @@ namespace DG.OneDrive.Tests
 
             var drive = await client.GetDriveAsync();
 
-            Assert.NotNull(drive);
-            Assert.True(drive.Quota.Total > 0);
+            drive.Should().NotBeNull();
+            drive.Quota.Total.Should().Match<ByteSize>(t => t > 0);
         }
 
         [Fact]
@@ -34,13 +35,13 @@ namespace DG.OneDrive.Tests
 
             var children = await client.GetChildrenAsync("/Tests");
 
-            Assert.NotNull(children);
+            children.Should().NotBeNull();
             if (!children.Any())
             {
                 return;
             }
 
-            Assert.Contains(children, file => file.description == "A test file");
+            children.Should().Contain(file => file.description == "A test file");
         }
 
         [Fact]
@@ -50,8 +51,8 @@ namespace DG.OneDrive.Tests
 
             var user = await client.GetCurrentUserAsync();
 
-            Assert.NotNull(user);
-            Assert.Equal("https://graph.microsoft.com/v1.0/$metadata#users/$entity", user.odataContext);
+            user.Should().NotBeNull();
+            user.odataContext.Should().Be("https://graph.microsoft.com/v1.0/$metadata#users/$entity");
         }
 
         [Fact]
@@ -59,7 +60,6 @@ namespace DG.OneDrive.Tests
         {
             var client = SetupClient();
             var id = "667B8052A954FAAB!24786";
-            string expectedContent = "Hello world! This is a test.";
 
             using (var stream = new MemoryStream())
             {
@@ -68,8 +68,7 @@ namespace DG.OneDrive.Tests
                 using (var streamReader = new StreamReader(stream))
                 {
                     string content = streamReader.ReadToEnd();
-
-                    Assert.Equal(expectedContent, content);
+                    content.Should().Be("Hello world! This is a test.");
                 }
             }
         }
@@ -94,14 +93,14 @@ namespace DG.OneDrive.Tests
             var usedMemoryAfter = _currentProcess.PrivateMemorySize64;
             var difference = ByteSize.FromBytes(usedMemoryAfter - usedMemoryBefore);
 
-            Assert.True(usedMemoryBefore < ByteSize.FromMB(2), $"Expected less than 500MB, actual {usedMemoryBefore}");
+            Assert.True(difference < ByteSize.FromMB(2), $"Expected less than 500MB, actual {difference}");
         }
 
         internal class DummyFile : IDisposable
         {
             private readonly string _name;
+            private readonly FileStream fs;
             private bool disposedValue;
-            private FileStream fs;
 
             public override string ToString()
             {
