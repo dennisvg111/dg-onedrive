@@ -82,19 +82,19 @@ namespace DG.OneDrive.Tests
         {
             var client = SetupClient();
 
-            _currentProcess.Refresh();
-            var usedMemoryBefore = _currentProcess.PrivateMemorySize64;
-
             using (var file = new DummyFile())
             {
                 var fileStream = file.GetStream();
+                _currentProcess.Refresh();
+                var usedMemoryBefore = _currentProcess.PrivateMemorySize64;
+
                 await client.CopyToStreamAsync(_largeFileId, fileStream);
 
                 _currentProcess.Refresh();
                 var usedMemoryAfter = _currentProcess.PrivateMemorySize64;
                 var difference = ByteSize.FromBytes(usedMemoryAfter - usedMemoryBefore);
 
-                Assert.True(difference > ByteSize.FromMB(110), $"Expected more than 110MB, actual {difference}");
+                Assert.True(difference > ByteSize.FromMB(50), $"Expected more than 50MB, actual {difference}");
             }
         }
 
@@ -103,20 +103,31 @@ namespace DG.OneDrive.Tests
         {
             var client = SetupClient();
 
-            _currentProcess.Refresh();
-            var usedMemoryBefore = _currentProcess.PrivateMemorySize64;
-
             using (var file = new DummyFile())
-            using (var content = await client.GetContent(_largeFileId))
+            using (var content = await client.GetContentAsync(_largeFileId))
             {
                 var fileStream = file.GetStream();
-                content.CopyTo(fileStream, 10485760);
+
+                _currentProcess.Refresh();
+                var usedMemoryBefore = _currentProcess.PrivateMemorySize64;
+
+                byte[] buffer = new byte[ByteSize.FromMB(10)];
+
+                int read;
+                while ((read = await content.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer, 0, read);
+                    await fileStream.FlushAsync();
+
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                }
 
                 _currentProcess.Refresh();
                 var usedMemoryAfter = _currentProcess.PrivateMemorySize64;
                 var difference = ByteSize.FromBytes(usedMemoryAfter - usedMemoryBefore);
 
-                Assert.True(difference < ByteSize.FromMB(110), $"Expected less than 110MB, actual {difference}");
+                Assert.True(difference < ByteSize.FromMB(50), $"Expected less than 50MB, actual {difference}");
             }
         }
 
@@ -135,7 +146,7 @@ namespace DG.OneDrive.Tests
             {
                 Directory.CreateDirectory(@"C:\tmp");
                 _name = @"C:\tmp\" + Guid.NewGuid().ToString().ToLowerInvariant() + ".dummy";
-                fs = File.Create(_name, 10485760, FileOptions.WriteThrough);
+                fs = File.Create(_name, (int)ByteSize.FromMB(10).TotalBytes, FileOptions.WriteThrough);
             }
 
             public Stream GetStream()

@@ -73,9 +73,20 @@ namespace DG.OneDrive
             }
         }
 
-        public async Task<DriveItemStream> GetContent(string fileId)
+        /// <summary>
+        /// Returns a <see cref="DriveItemStream"/> that allows for asynchronous reading of a files content.
+        /// </summary>
+        /// <param name="fileId"></param>
+        /// <returns></returns>
+        public async Task<DriveItemStream> GetContentAsync(string fileId)
         {
-            return new DriveItemStream(fileId, _authorization);
+            var request = FluentRequest.Get.To($"drive/items/{fileId}?select=id,@microsoft.graph.downloadUrl,size")
+                .WithAuthorization(_authorization);
+
+            var client = HttpClientProvider.ClientForSettings(_clientSettings);
+            var itemStub = await client.SendAndDeserializeAsync<DownloadableDriveItem>(request).ConfigureAwait(false);
+
+            return new DriveItemStream(itemStub);
         }
 
         /// <summary>
