@@ -69,7 +69,9 @@ namespace DG.OneDrive.Authorization
                 );
 
             var client = HttpClientProvider.ClientForSettings(_httpClientSettings);
-            var token = await client.SendAndDeserializeAsync<AccessToken>(tokenRequest).ConfigureAwait(false);
+            var result = await client.SendAsync(tokenRequest).ConfigureAwait(false);
+            result.EnsureSuccessStatusCode();
+            var token = await result.DeserializeResponseAsync<AccessToken>().ConfigureAwait(false);
 
             return new OAuthToken(token.access_token, token.ExpirationDate, token.refresh_token);
         }
